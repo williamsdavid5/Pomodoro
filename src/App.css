@@ -3,7 +3,8 @@ h1 {
 }
 
 h1,
-p {
+p,
+h3 {
   margin: 0;
   padding: 0;
 }
