@@ -1,0 +1,27 @@
+#timerBloco {
+    border: 5px solid #2D2E28;
+    box-shadow: 5px 5px 0px #2D2E28;
+    margin: 10px 0px;
+    padding: 5px;
+    border-radius: 10px;
+    max-width: 800px;
+    display: flex;
+    justify-content: space-between;
+}
+
+#timerBloco button {
+    font-family: 'Arial black';
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: #2D2E28;
+}
+
+#timerBloco button:active {
+    transform: scale(0.95);
+}
+
+.finalizado {
+    background-color: #FEB2A2;
+}

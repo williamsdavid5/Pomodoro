@@ -21,6 +21,12 @@ p {
   padding-left: 10px;
 }
 
+#divPomodoros {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 @media (max-width: 450px) {
   #divTitulo {
     align-items: center;
