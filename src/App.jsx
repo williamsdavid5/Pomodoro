@@ -38,7 +38,7 @@ function App() {
       </div>
       <div id='divPomodoros'>
         {[0, 1, 2, 3].map((i) => (
-          <Timer key={i} index={i} ativo={ativo === i} onStart={() => setAtivo(i)} onFinish={handleTimerFinished}></Timer>
+          <Timer key={i} index={i} ativo={ativo === i} onStart={() => setAtivo(ativo === i ? null : i)} onFinish={handleTimerFinished}></Timer>
         ))}
       </div>
     </>

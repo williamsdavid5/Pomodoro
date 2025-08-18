@@ -5,6 +5,7 @@ export default function Timer({ index, ativo, onStart, onFinish }) {
 
     const [tempo, setTempo] = useState(0.10 * 60);
     const [terminou, setTerminou] = useState(false);
+    const [horaFim, setHoraFim] = useState(new Date());
 
     useEffect(() => {
         let intervalo;
@@ -14,11 +15,9 @@ export default function Timer({ index, ativo, onStart, onFinish }) {
             }, 1000);
         }
 
-        if (tempo == 0) {
+        if (tempo == 0 && !terminou) {
             setTerminou(true);
-        }
-
-        if (terminou) {
+            setHoraFim(new Date());
             onFinish(index);
         }
 
@@ -33,18 +32,19 @@ export default function Timer({ index, ativo, onStart, onFinish }) {
     };
 
     return (
-        <div id="timerBloco" className={terminou ? "finalizado" : ""}>
-            <h1>{formatarTempo(tempo)}</h1>
+        <>
+            <div id="timerBloco" className={terminou ? "finalizado" : ""}>
+                <h1>{formatarTempo(tempo)}</h1>
 
-            {
-                terminou ?
-                    (<h1 style={{ width: '40px' }}>✓</h1>) :
-                    (ativo ?
-                        <button id='botaoPausar' onClick={() => onStart(null)}>Pausar</button> :
-                        <button id='botaoIniciar' onClick={onStart}>Iniciar</button>)
-            }
-
-
-        </div>
+                {
+                    terminou ?
+                        (<h1 style={{ width: '40px' }}>✓</h1>) :
+                        (ativo ?
+                            <button id='botaoPausar' onClick={() => onStart()}>Pausar</button> :
+                            <button id='botaoIniciar' onClick={onStart}>Iniciar</button>)
+                }
+            </div>
+            {terminou && <h3>Finalizado às {horaFim.toLocaleTimeString("pt-br")}</h3>}
+        </>
     )
 }
