@@ -16,6 +16,16 @@ function App() {
     return () => clearInterval(intervalo);
   }, 1000);
 
+
+  const handleTimerFinished = (index) => {
+    // Avança para o próximo timer se houver
+    if (index < 3) {
+      setAtivo(index + 1);
+    } else {
+      setAtivo(null); // Todos os timers finalizados
+    }
+  };
+
   return (
     <>
       <div id='divTitulo'>
@@ -28,7 +38,7 @@ function App() {
       </div>
       <div id='divPomodoros'>
         {[0, 1, 2, 3].map((i) => (
-          <Timer key={i} ativo={ativo === i} onStart={() => setAtivo(i)}></Timer>
+          <Timer key={i} index={i} ativo={ativo === i} onStart={() => setAtivo(i)} onFinish={handleTimerFinished}></Timer>
         ))}
       </div>
     </>

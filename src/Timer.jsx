@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import './timer.css'
 
-export default function Timer({ ativo, onStart }) {
+export default function Timer({ index, ativo, onStart, onFinish }) {
 
     const [tempo, setTempo] = useState(0.10 * 60);
     const [terminou, setTerminou] = useState(false);
@@ -18,9 +18,13 @@ export default function Timer({ ativo, onStart }) {
             setTerminou(true);
         }
 
+        if (terminou) {
+            onFinish(index);
+        }
+
         return () => clearInterval(intervalo);
 
-    }, [ativo, tempo]);
+    }, [ativo, tempo, terminou]);
 
     const formatarTempo = (segundos) => {
         const min = String(Math.floor(segundos / 60)).padStart(2, '0');
