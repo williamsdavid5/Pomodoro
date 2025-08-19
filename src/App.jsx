@@ -4,23 +4,33 @@ import RelogioIcon from './assets/relogioIcon.svg'
 import Timer from './Timer'
 
 function App() {
+  const hoje = new Date().toLocaleDateString("pt-br");
+
   const [ativo, setAtivo] = useState(null);
   const [dataHora, setDataHora] = useState(new Date());
   const [timersData, setTimersData] = useState(() => {
-    // Carrega os dados salvos ou inicializa
     const savedData = localStorage.getItem('pomodoroTimersData');
-    return savedData ? JSON.parse(savedData) : {
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      // Verifica se é o mesmo dia
+      if (parsed.dia === hoje) {
+        return parsed;
+      }
+    }
+    // Se não tiver nada ou for outro dia → reseta
+    return {
+      dia: hoje,
       timersConcluidos: [],
       timersProgresso: Array(4).fill({ tempoDecorrido: 0, pausado: true })
     };
   });
 
-  // Atualiza o localStorage sempre que os dados mudam
+  // Salva no localStorage sempre que houver mudanças
   useEffect(() => {
     localStorage.setItem('pomodoroTimersData', JSON.stringify(timersData));
   }, [timersData]);
 
-  // Atualização do relógio principal
+  // Atualiza o relógio
   useEffect(() => {
     const intervalo = setInterval(() => {
       setDataHora(new Date());
@@ -33,13 +43,14 @@ function App() {
     const now = new Date();
     const novoConcluido = {
       index,
-      data: now.toLocaleDateString("pt-br"),
+      data: hoje,
       hora: now.toLocaleTimeString("pt-br"),
       timestamp: now.getTime()
     };
 
     setTimersData(prev => ({
       ...prev,
+      dia: hoje,
       timersConcluidos: [...prev.timersConcluidos, novoConcluido],
       timersProgresso: prev.timersProgresso.map((t, i) =>
         i === index ? { tempoDecorrido: 0, pausado: true } : t
@@ -56,6 +67,7 @@ function App() {
   const handleTimerProgress = (index, tempoDecorrido, pausado) => {
     setTimersData(prev => ({
       ...prev,
+      dia: hoje,
       timersProgresso: prev.timersProgresso.map((t, i) =>
         i === index ? { tempoDecorrido, pausado } : t
       )
@@ -69,7 +81,7 @@ function App() {
   return (
     <>
       <div id='divTitulo'>
-        <img src={RelogioIcon} alt="Ícone de relógio"></img>
+        <img src={RelogioIcon} alt="Ícone de relógio" />
         <div id='texto'>
           <h1>Pomodoro do dia</h1>
           <p>Complete sua meta diária e seja produtivo, amanhã o relógio reinicia.</p>

@@ -19,6 +19,7 @@ export default function Timer({
     const requestRef = useRef();
     const pausadoRef = useRef(true);
     const tempoInicialRef = useRef(progressoInicial?.tempoDecorrido || 0);
+    const ultimoSaveRef = useRef(Date.now());
 
     // Inicialização do timer
     useEffect(() => {
@@ -38,6 +39,22 @@ export default function Timer({
         }
     }, [concluido, horaConclusao, progressoInicial]);
 
+    // Efeito para controle do salvamento automático
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (!pausadoRef.current) {
+                const agora = Date.now();
+                if (agora - ultimoSaveRef.current > 30000) { // 30 segundos
+                    const tempoDecorrido = TEMPO_TOTAL - tempoRestante;
+                    onProgress(index, tempoDecorrido, false);
+                    ultimoSaveRef.current = agora;
+                }
+            }
+        }, 5000); // Verifica a cada 5 segundos
+
+        return () => clearInterval(interval);
+    }, [index, tempoRestante, onProgress]);
+
     // Animação do timer
     const atualizarTimer = () => {
         if (pausadoRef.current) {
@@ -51,12 +68,6 @@ export default function Timer({
 
         setTempoRestante(prev => {
             const novoRestante = prev - deltaTempo;
-            const tempoDecorrido = TEMPO_TOTAL - novoRestante;
-
-            // Salva automaticamente a cada 30 segundos
-            if (Math.floor(tempoDecorrido) % 30 === 0) {
-                onProgress(index, tempoDecorrido, false);
-            }
 
             if (novoRestante <= 0) {
                 const now = new Date();
@@ -78,6 +89,7 @@ export default function Timer({
         if (ativo && !terminou) {
             pausadoRef.current = false;
             ultimoTempoRef.current = Date.now();
+            ultimoSaveRef.current = Date.now();
             requestRef.current = requestAnimationFrame(atualizarTimer);
         } else {
             pausadoRef.current = true;
@@ -99,6 +111,7 @@ export default function Timer({
             // Iniciar
             pausadoRef.current = false;
             ultimoTempoRef.current = Date.now();
+            ultimoSaveRef.current = Date.now();
             onProgress(index, TEMPO_TOTAL - tempoRestante, false);
         }
         onStart();
