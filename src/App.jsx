@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import RelogioIcon from './assets/relogioIcon.svg'
+import RelogioIcon2 from '../public/relogioIcon.svg'
 import Timer from './Timer'
 
 function App() {
@@ -104,7 +105,7 @@ function App() {
     if (Notification.permission === "granted") {
       new Notification("⏱️ Timer Finalizado!", {
         body: "Seu cronômetro terminou.",
-        icon: RelogioIcon
+        icon: RelogioIcon2
       });
     }
   }
