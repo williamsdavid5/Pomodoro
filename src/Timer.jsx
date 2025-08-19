@@ -20,6 +20,7 @@ export default function Timer({
     const pausadoRef = useRef(true);
     const tempoInicialRef = useRef(progressoInicial?.tempoDecorrido || 0);
     const ultimoSaveRef = useRef(Date.now());
+    const terminouRef = useRef(concluido);
 
     // Inicialização do timer
     useEffect(() => {
@@ -69,8 +70,9 @@ export default function Timer({
         setTempoRestante(prev => {
             const novoRestante = prev - deltaTempo;
 
-            if (novoRestante <= 0) {
+            if (novoRestante <= 0 && !terminouRef.current) {
                 const now = new Date();
+                terminouRef.current = true; // <- marca que já terminou
                 setTerminou(true);
                 setHoraFim(now);
                 onFinish(index);
@@ -138,7 +140,7 @@ export default function Timer({
                 }
             </div>
             {terminou && horaFim && (
-                <h3>Finalizado às {horaFim.toLocaleTimeString("pt-br")}</h3>
+                <h3>25 minutos concluídos! Finalizado às {horaFim.toLocaleTimeString("pt-br")}</h3>
             )}
         </>
     )

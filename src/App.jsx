@@ -57,6 +57,8 @@ function App() {
       )
     }));
 
+    avisarTimerFinalizado();
+
     if (index < 3) {
       setAtivo(index + 1);
     } else {
@@ -77,6 +79,23 @@ function App() {
   const isTimerConcluido = (index) => {
     return timersData.timersConcluidos.some(t => t.index === index);
   };
+
+  //para pedir permissão de notificação
+  useEffect(() => {
+    if (Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+
+  function avisarTimerFinalizado() {
+    if (Notification.permission === "granted") {
+      new Notification("⏱️ Timer Finalizado!", {
+        body: "Seu cronômetro terminou.",
+        icon: "https://cdn-icons-png.flaticon.com/512/2088/2088617.png" // opcional
+      });
+    }
+  }
 
   return (
     <>
