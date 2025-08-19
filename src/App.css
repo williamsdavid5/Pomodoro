@@ -28,6 +28,21 @@ h3 {
   flex-direction: column;
 }
 
+#botaoResetar {
+  border: 5px solid #2D2E28;
+  box-shadow: 5px 5px 0px #2D2E28;
+  border-radius: 10px;
+  padding: 10px 20px;
+  margin-top: 10px;
+  background: none;
+  font-family: 'Arial black';
+  cursor: pointer;
+}
+
+#botaoResetar:active {
+  transform: scale(0.95);
+}
+
 @media (max-width: 450px) {
   #divTitulo {
     align-items: center;

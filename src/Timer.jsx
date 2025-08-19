@@ -11,7 +11,7 @@ export default function Timer({
     onFinish,
     onProgress
 }) {
-    const TEMPO_TOTAL = 25 * 60; // 25 minutos em segundos
+    const TEMPO_TOTAL = 0.1 * 60; // 25 minutos em segundos
     const [tempoRestante, setTempoRestante] = useState(TEMPO_TOTAL - (progressoInicial?.tempoDecorrido || 0));
     const [terminou, setTerminou] = useState(false);
     const [horaFim, setHoraFim] = useState(null);
@@ -125,6 +125,16 @@ export default function Timer({
         const sec = String(segundosInt % 60).padStart(2, '0');
         return `${min}:${sec}`;
     };
+
+    useEffect(() => {
+        if (!concluido) {
+            setTerminou(false);
+            setHoraFim(null);
+            setTempoRestante(TEMPO_TOTAL - (progressoInicial?.tempoDecorrido || 0));
+            terminouRef.current = false;
+        }
+    }, [concluido, progressoInicial, TEMPO_TOTAL]);
+
 
     return (
         <>

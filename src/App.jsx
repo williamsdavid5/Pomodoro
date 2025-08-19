@@ -12,12 +12,10 @@ function App() {
     const savedData = localStorage.getItem('pomodoroTimersData');
     if (savedData) {
       const parsed = JSON.parse(savedData);
-      // Verifica se é o mesmo dia
       if (parsed.dia === hoje) {
         return parsed;
       }
     }
-    // Se não tiver nada ou for outro dia → reseta
     return {
       dia: hoje,
       timersConcluidos: [],
@@ -35,7 +33,6 @@ function App() {
     const intervalo = setInterval(() => {
       setDataHora(new Date());
     }, 1000);
-
     return () => clearInterval(intervalo);
   }, []);
 
@@ -80,19 +77,34 @@ function App() {
     return timersData.timersConcluidos.some(t => t.index === index);
   };
 
-  //para pedir permissão de notificação
+  // todos concluidos?
+  const todosConcluidos = timersData.timersConcluidos.length === 4;
+
+  // função de reset
+  const handleReset = () => {
+    if (window.confirm("Tem certeza que deseja resetar os timers? Isso apagará todos os dados de hoje.")) {
+      localStorage.removeItem('pomodoroTimersData');
+      setTimersData({
+        dia: hoje,
+        timersConcluidos: [],
+        timersProgresso: Array(4).fill({ tempoDecorrido: 0, pausado: true })
+      });
+      setAtivo(null);
+    }
+  };
+
+  // pedir permissão de notificação
   useEffect(() => {
     if (Notification.permission !== "granted") {
       Notification.requestPermission();
     }
   }, []);
 
-
   function avisarTimerFinalizado() {
     if (Notification.permission === "granted") {
       new Notification("⏱️ Timer Finalizado!", {
         body: "Seu cronômetro terminou.",
-        icon: "https://cdn-icons-png.flaticon.com/512/2088/2088617.png" // opcional
+        icon: RelogioIcon
       });
     }
   }
@@ -100,7 +112,7 @@ function App() {
   return (
     <>
       <div id='divTitulo'>
-        <img src={RelogioIcon} alt="Ícone de relógio" />
+        <img src={RelogioIcon} alt="Ícone de relógio" style={{ width: "100px" }} />
         <div id='texto'>
           <h1>Pomodoro do dia</h1>
           <p>Complete sua meta diária e seja produtivo, amanhã o relógio reinicia.</p>
@@ -125,6 +137,12 @@ function App() {
           );
         })}
       </div>
+
+      {todosConcluidos && (
+        <button id='botaoResetar' onClick={handleReset}>
+          Resetar
+        </button>
+      )}
     </>
   )
 }
