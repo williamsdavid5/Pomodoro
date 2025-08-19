@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import RelogioIcon from './assets/relogioIcon.svg'
 import RelogioIcon2 from '../public/relogioIcon.svg'
@@ -9,32 +9,32 @@ function App() {
 
   const [ativo, setAtivo] = useState(null);
   const [dataHora, setDataHora] = useState(new Date());
+
   const [timersData, setTimersData] = useState(() => {
-    const savedData = localStorage.getItem('pomodoroTimersData');
-    if (savedData) {
-      const parsed = JSON.parse(savedData);
-      if (parsed.dia === hoje) {
-        return parsed;
-      }
+    const saved = localStorage.getItem('pomodoroTimersData');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.dia === hoje) return parsed;
     }
     return {
       dia: hoje,
       timersConcluidos: [],
-      timersProgresso: Array(4).fill({ tempoDecorrido: 0, pausado: true })
+      timersProgresso: Array.from({ length: 4 }, () => ({ tempoDecorrido: 0, pausado: true }))
     };
   });
+
+  // refs para os 4 timers
+  const timerRefs = useRef([]);
 
   // Salva no localStorage sempre que houver mudanças
   useEffect(() => {
     localStorage.setItem('pomodoroTimersData', JSON.stringify(timersData));
   }, [timersData]);
 
-  // Atualiza o relógio
+  // Relógio
   useEffect(() => {
-    const intervalo = setInterval(() => {
-      setDataHora(new Date());
-    }, 1000);
-    return () => clearInterval(intervalo);
+    const id = setInterval(() => setDataHora(new Date()), 1000);
+    return () => clearInterval(id);
   }, []);
 
   const handleTimerFinished = (index) => {
@@ -57,11 +57,7 @@ function App() {
 
     avisarTimerFinalizado();
 
-    if (index < 3) {
-      setAtivo(index + 1);
-    } else {
-      setAtivo(null);
-    }
+    setAtivo(index < 3 ? index + 1 : null);
   };
 
   const handleTimerProgress = (index, tempoDecorrido, pausado) => {
@@ -74,21 +70,18 @@ function App() {
     }));
   };
 
-  const isTimerConcluido = (index) => {
-    return timersData.timersConcluidos.some(t => t.index === index);
-  };
+  const isTimerConcluido = (index) =>
+    timersData.timersConcluidos.some(t => t.index === index);
 
-  // todos concluidos?
   const todosConcluidos = timersData.timersConcluidos.length === 4;
 
-  // função de reset
   const handleReset = () => {
     if (window.confirm("Tem certeza que deseja resetar os timers? Isso apagará todos os dados de hoje.")) {
       localStorage.removeItem('pomodoroTimersData');
       setTimersData({
         dia: hoje,
         timersConcluidos: [],
-        timersProgresso: Array(4).fill({ tempoDecorrido: 0, pausado: true })
+        timersProgresso: Array.from({ length: 4 }, () => ({ tempoDecorrido: 0, pausado: true }))
       });
       setAtivo(null);
     }
@@ -110,6 +103,19 @@ function App() {
     }
   }
 
+  // 🔔 Salvamento automático GLOBAL a cada 30s (usa snapshots dos timers)
+  useEffect(() => {
+    const id = setInterval(() => {
+      timerRefs.current.forEach((ref, i) => {
+        const snap = ref?.getSnapshot?.();
+        if (!snap) return;
+        // chama a MESMA função de salvar progresso
+        handleTimerProgress(snap.index, snap.tempoDecorrido, snap.pausado);
+      });
+    }, 30000);
+    return () => clearInterval(id);
+  }, []); // roda sempre, independente de estado
+
   return (
     <>
       <div id='divTitulo'>
@@ -120,12 +126,14 @@ function App() {
           <h3>Dia {dataHora.toLocaleDateString("pt-br")}, {dataHora.toLocaleTimeString("pt-br")}</h3>
         </div>
       </div>
+
       <div id='divPomodoros'>
         {[0, 1, 2, 3].map((i) => {
           const timerConcluido = timersData.timersConcluidos.find(t => t.index === i);
           return (
             <Timer
               key={i}
+              ref={el => (timerRefs.current[i] = el)}
               index={i}
               ativo={ativo === i}
               concluido={isTimerConcluido(i)}
