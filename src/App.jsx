@@ -103,18 +103,16 @@ function App() {
     }
   }
 
-  // 🔔 Salvamento automático GLOBAL a cada 30s (usa snapshots dos timers)
   useEffect(() => {
     const id = setInterval(() => {
       timerRefs.current.forEach((ref, i) => {
         const snap = ref?.getSnapshot?.();
         if (!snap) return;
-        // chama a MESMA função de salvar progresso
         handleTimerProgress(snap.index, snap.tempoDecorrido, snap.pausado);
       });
     }, 30000);
     return () => clearInterval(id);
-  }, []); // roda sempre, independente de estado
+  }, []);
 
   return (
     <>

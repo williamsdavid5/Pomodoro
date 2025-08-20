@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useImperativeHandle, forwardRef } from 'react'
+import { useEffect, useState, useRef, forwardRef } from 'react'
 import './timer.css'
 
 function Timer({
@@ -11,21 +11,24 @@ function Timer({
     onFinish,
     onProgress
 }, ref) {
-    const TEMPO_TOTAL = 30 * 60; // 30 minutos em segundos
+    const TEMPO_TOTAL = 25 * 60; // 25 minutos em segundos
     const [tempoRestante, setTempoRestante] = useState(TEMPO_TOTAL - (progressoInicial?.tempoDecorrido || 0));
     const [terminou, setTerminou] = useState(false);
     const [horaFim, setHoraFim] = useState(null);
 
-    const ultimoTempoRef = useRef(Date.now());
-    const requestRef = useRef();
+    const horaInicioRef = useRef(null);
+    const intervaloRef = useRef(null);
     const pausadoRef = useRef(true);
-    const terminouRef = useRef(concluido);
+    const ultimoSaveRef = useRef(Date.now());
     const tempoRestanteRef = useRef(tempoRestante);
+    const ativoRef = useRef(ativo);
+    const ultimaAtualizacaoRef = useRef(Date.now());
 
-    // manter ref sempre atualizada
+    // Manter refs sempre atualizadas
     useEffect(() => {
         tempoRestanteRef.current = tempoRestante;
-    }, [tempoRestante]);
+        ativoRef.current = ativo;
+    }, [tempoRestante, ativo]);
 
     // Inicialização do timer
     useEffect(() => {
@@ -38,100 +41,165 @@ function Timer({
                 hoje.setHours(horas, minutos, segundos);
                 setHoraFim(hoje);
             }
-            terminouRef.current = true;
             pausadoRef.current = true;
         } else {
             setTerminou(false);
             setHoraFim(null);
-            setTempoRestante(TEMPO_TOTAL - (progressoInicial?.tempoDecorrido || 0));
-            terminouRef.current = false;
+            const tempoInicial = progressoInicial?.tempoDecorrido || 0;
+            setTempoRestante(TEMPO_TOTAL - tempoInicial);
             pausadoRef.current = progressoInicial?.pausado !== false;
+
+            if (tempoInicial > 0 && !progressoInicial?.pausado) {
+                horaInicioRef.current = Date.now() - (tempoInicial * 1000);
+            } else {
+                horaInicioRef.current = null;
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [concluido, horaConclusao, progressoInicial]);
 
-    // Animação do timer
-    const atualizarTimer = () => {
-        if (pausadoRef.current) {
-            requestRef.current = requestAnimationFrame(atualizarTimer);
-            return;
+    // Efeito para salvamento automático a cada 30 segundos
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (ativoRef.current && !pausadoRef.current) {
+                const agora = Date.now();
+                if (agora - ultimoSaveRef.current >= 30000) {
+                    const tempoDecorrido = TEMPO_TOTAL - tempoRestanteRef.current;
+                    console.log(`Salvamento automático - Timer ${index}: ${tempoDecorrido}s`);
+                    onProgress(index, tempoDecorrido, false);
+                    ultimoSaveRef.current = agora;
+                }
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [index, onProgress]);
+
+    // Função para atualizar o timer baseada em setInterval
+    const iniciarContagem = () => {
+        if (intervaloRef.current) {
+            clearInterval(intervaloRef.current);
         }
 
-        const agora = Date.now();
-        const delta = (agora - ultimoTempoRef.current) / 1000;
-        ultimoTempoRef.current = agora;
+        intervaloRef.current = setInterval(() => {
+            if (pausadoRef.current || !horaInicioRef.current || terminou) {
+                return;
+            }
 
-        setTempoRestante(prev => {
-            const novo = prev - delta;
-            if (novo <= 0 && !terminouRef.current) {
+            const agora = Date.now();
+            const tempoDecorrido = (agora - horaInicioRef.current) / 1000;
+            const novoRestante = Math.max(0, TEMPO_TOTAL - tempoDecorrido);
+
+            setTempoRestante(novoRestante);
+            ultimaAtualizacaoRef.current = agora;
+
+            if (novoRestante <= 0) {
                 const now = new Date();
-                terminouRef.current = true;
                 setTerminou(true);
                 setHoraFim(now);
                 onFinish(index);
                 onProgress(index, TEMPO_TOTAL, true);
-                return 0;
+                pausadoRef.current = true;
+                horaInicioRef.current = null;
+                clearInterval(intervaloRef.current);
             }
-            return novo;
-        });
+        }, 100); // Atualiza a cada 100ms para maior precisão
+    };
 
-        requestRef.current = requestAnimationFrame(atualizarTimer);
+    // Função para corrigir o tempo quando a aba volta ao foco
+    const corrigirTempo = () => {
+        if (!pausadoRef.current && horaInicioRef.current && !terminou) {
+            const agora = Date.now();
+            const tempoDecorrido = (agora - horaInicioRef.current) / 1000;
+            const novoRestante = Math.max(0, TEMPO_TOTAL - tempoDecorrido);
+
+            setTempoRestante(novoRestante);
+
+            if (novoRestante <= 0) {
+                const now = new Date();
+                setTerminou(true);
+                setHoraFim(now);
+                onFinish(index);
+                onProgress(index, TEMPO_TOTAL, true);
+                pausadoRef.current = true;
+                horaInicioRef.current = null;
+            }
+        }
     };
 
     // Controle da animação
     useEffect(() => {
         if (ativo && !terminou) {
             pausadoRef.current = false;
-            ultimoTempoRef.current = Date.now();
-            requestRef.current = requestAnimationFrame(atualizarTimer);
+
+            if (!horaInicioRef.current) {
+                const tempoDecorrido = TEMPO_TOTAL - tempoRestante;
+                horaInicioRef.current = Date.now() - (tempoDecorrido * 1000);
+            }
+
+            ultimoSaveRef.current = Date.now();
+            iniciarContagem();
         } else {
             pausadoRef.current = true;
-            cancelAnimationFrame(requestRef.current);
-            // salva snapshot imediato ao sair do ativo
-            const tempoDecorrido = Math.min(TEMPO_TOTAL, TEMPO_TOTAL - Math.max(0, tempoRestanteRef.current));
+            if (intervaloRef.current) {
+                clearInterval(intervaloRef.current);
+            }
+
+            const tempoDecorrido = TEMPO_TOTAL - tempoRestante;
             onProgress(index, tempoDecorrido, true);
         }
-        return () => cancelAnimationFrame(requestRef.current);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
+        return () => {
+            if (intervaloRef.current) {
+                clearInterval(intervaloRef.current);
+            }
+        };
     }, [ativo, terminou]);
+
+    // Event listener para quando a aba volta ao foco
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                corrigirTempo();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', corrigirTempo);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', corrigirTempo);
+        };
+    }, []);
 
     const handleStartPause = () => {
         if (ativo) {
             // Pausar
             pausadoRef.current = true;
-            const tempoDecorrido = Math.min(TEMPO_TOTAL, TEMPO_TOTAL - Math.max(0, tempoRestanteRef.current));
+            const tempoDecorrido = TEMPO_TOTAL - tempoRestante;
             onProgress(index, tempoDecorrido, true);
+            ultimoSaveRef.current = Date.now();
         } else {
-            // Iniciar
+            // Iniciar/Continuar
             pausadoRef.current = false;
-            ultimoTempoRef.current = Date.now();
-            const tempoDecorrido = Math.min(TEMPO_TOTAL, TEMPO_TOTAL - Math.max(0, tempoRestanteRef.current));
+            if (!horaInicioRef.current) {
+                const tempoDecorrido = TEMPO_TOTAL - tempoRestante;
+                horaInicioRef.current = Date.now() - (tempoDecorrido * 1000);
+            }
+            ultimoSaveRef.current = Date.now();
+            const tempoDecorrido = TEMPO_TOTAL - tempoRestante;
             onProgress(index, tempoDecorrido, false);
+            iniciarContagem();
         }
         onStart();
     };
 
     const formatarTempo = (segundos) => {
-        const s = Math.max(0, Math.floor(segundos));
-        const min = String(Math.floor(s / 60)).padStart(2, '0');
-        const sec = String(s % 60).padStart(2, '0');
+        const segundosInt = Math.max(0, Math.floor(segundos));
+        const min = String(Math.floor(segundosInt / 60)).padStart(2, '0');
+        const sec = String(segundosInt % 60).padStart(2, '0');
         return `${min}:${sec}`;
     };
-
-    // 👉 expõe um snapshot para o App salvar a cada 30s
-    useImperativeHandle(ref, () => ({
-        getSnapshot: () => {
-            const restante = Math.max(0, tempoRestanteRef.current);
-            const tempoDecorrido = Math.min(TEMPO_TOTAL, TEMPO_TOTAL - restante);
-            return {
-                index,
-                tempoDecorrido,
-                pausado: pausadoRef.current,
-                terminou: terminouRef.current,
-                total: TEMPO_TOTAL,
-            };
-        }
-    }), [index]);
 
     return (
         <>
